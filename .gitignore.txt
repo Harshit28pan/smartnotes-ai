@@ -1,0 +1,12 @@
+__pycache__/
+.spyproject/
+.ipynb_checkpoints/
+.virtual_documents/
+anaconda_projects/
+
+notes.csv
+analysis_report.csv
+
+PROJECT.zip
+Quiz_*.txt
+*.pyc

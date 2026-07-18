@@ -1,0 +1,34 @@
+1. What is Matplotlib used for?
+A. To create videos
+B. To create graphs and charts
+C. To write documents
+D. To build websites
+Correct answer: B. To create graphs and charts
+
+2. What does Matplotlib help with?
+A. Hiding data
+B. Visualizing data
+C. Deleting data
+D. Creating data
+Correct answer: B. Visualizing data
+
+3. What types of charts can Matplotlib create?
+A. Only lines
+B. Only bars
+C. Lines, bars, pies, and more
+D. Only pies
+Correct answer: C. Lines, bars, pies, and more
+
+4. How is Matplotlib to use?
+A. Very difficult
+B. Simple
+C. Average
+D. Extremely hard
+Correct answer: B. Simple
+
+5. What is Matplotlib great for?
+A. Only games
+B. Only videos
+C. Projects and presentations
+D. Only documents
+Correct answer: C. Projects and presentations

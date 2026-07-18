@@ -1,0 +1,6 @@
+id,title,category,priority,content,date_created,last_modified,status,source
+1,Python,Programming,High,Python is an programming language,18-07-2026,18-07-2026,completed,Manual
+2,SQL,Database,High,SQL is a structured query language,18-07-2026,18-07-2026,Active,Manual
+3,C++,Programming,Medium,"C++ is a programming language that allows you to create games, apps, and software. It was developed by Bjarne Stroustrup. C++ is object-oriented, meaning it uses objects to solve problems. It's a powerful language that's fast and flexible. C++ is used in many areas, including gaming, web development, and operating systems. It's a popular language to learn for beginners and experienced programmers.",,,Active,AI
+4,Matplotlib,Data Analytics,High,"Matplotlib is a Python library used to create graphs and charts. It helps visualize data, making it easier to understand. With Matplotlib, you can create lines, bars, pies, and more. It's simple to use and great for projects and presentations.",18-07-2026,18-07-2026,Active,AI
+5,SQL,Database,High,SQL is a language used for managing databases.,18-07-2026,18-07-2026,Active,AI
