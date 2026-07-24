@@ -1,0 +1,39 @@
+1. What is Python?
+A) A game
+B) An operating system
+C) A programming language
+D) A software
+
+Correct answer: C) A programming language
+
+2. What type of language is Python?
+A) Scripting language only
+B) Programming language
+C) Markup language
+D) Styling language
+
+Correct answer: B) Programming language
+
+3. Is Python a programming language?
+A) No
+B) Yes
+C) Maybe
+D) Not sure
+
+Correct answer: B) Yes
+
+4. What category does Python belong to?
+A) Gaming
+B) Programming
+C) Designing
+D) Networking
+
+Correct answer: B) Programming
+
+5. What is the nature of Python?
+A) Hardware
+B) Programming language
+C) Database
+D) Firmware
+
+Correct answer: B) Programming language

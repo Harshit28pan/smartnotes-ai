@@ -1,2 +1,2 @@
-Total Notes,Active Notes,Inactive Notes,Manual Notes,AI Notes,High Priority,Medium Priority,Low Priority
-3,3,0,2,1,2,1,0
+Total Notes,Active Notes,Completed Notes,Completion Rate (%),Manual Notes,AI Notes,AI Usage Rate (%),High Priority,Medium Priority,Low Priority,Average Characters,Average Words,Longest Note Characters,Shortest Note Characters,Total Characters
+9,8,0,0.0,3,6,66.67,7,2,0,188.78,31.56,442,33,1699

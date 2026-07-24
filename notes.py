@@ -1,80 +1,107 @@
 from datetime import datetime
 import pandas as pd
 import numpy as np
-from pandas.errors import EmptyDataError
 import os
-import groq
 from ai_helper import generate_note , summarize_note , generate_quiz
 
 
 class NotesManager:
     
+    """
+    A menu-driven application used to create, manage,
+    search, update and analyze notes.
+    """
+    
     def __init__(self):
+        
+        """
+    Initialize the Notes Manager and load all existing notes.
+        """
         
         self.notes = []
         self.load_notes()
         print("Notes Manager started successully")
         
+        if self.notes:
+
+            print("\nPreviously Saved Notes\n")
+ 
+            for note in self.notes:
+                self.display_note(note)
+  
+        else:
+           print("No saved notes available.")
+        
     def add_note(self):
-        print("\n-----ADD NEW NOTE-----")
-        title = input("Enter Note Title:")
-        category = input("Enter Category:")
-        priority = input("Enter Priority (High/Medium/low):")
-        content = input("Enter Note Content:")
-            
-        note = {
-            "id" : max(note["id"] for note in self.notes) + 1,
+        """
+    Collect note details from the user and save the note.
+        """
+        print("\n------ ADD NEW NOTE ------")
+
+        try:
+           title = input("Enter Note Title: ")
+
+           if not title.strip():
+               print("Title cannot be empty.")
+               return
+
+           category = input("Enter Category: ")
+           priority = input("Enter Priority (High/Medium/Low): ")
+           content = input("Enter Note Content: ")
+
+           if not content.strip():
+                print("Content cannot be empty.")
+                return
+           if self.notes:
+               new_id = max(note["id"] for note in self.notes) + 1
+           else:
+               new_id = 1
+
+           note = {
+            "id": new_id,
             "title": title,
             "category": category,
-            "priority":priority,
-            "content":content,
-            "date_created":datetime.now().strftime("%d-%m-%Y"),
-            "last_modified":datetime.now().strftime("%d-%m-%Y"),
-            "status":"Active",
-            "source":"Manual"
-            }
-        
-        self.notes.append(note)
-        
-        try:
-            
+            "priority": priority,
+            "content": content,
+            "date_created": datetime.now().strftime("%d-%m-%Y"),
+            "last_modified": datetime.now().strftime("%d-%m-%Y"),
+            "status": "Active",
+            "source": "Manual"
+              }
+           self.notes.append(note)
            self.save_notes()
-           print("\n Note added successfully")
-        
+           print("\nNote added successfully.")
         except Exception as e:
-            print("error",e)
+            print("Error:", e)
         
     
     def save_notes(self):
+        
+        """
+     Save all notes into the CSV file.
+        """
         df= pd.DataFrame(self.notes)
-        df.to_csv("notes.csv", index=False)
+        
+        try:
+            df.to_csv("notes.csv",index=False)
+        except PermissionError:
+            print("Please close notes.csv and try again.")
+        except Exception as e:
+            print(e)
         
     def load_notes(self):
+        
+        """
+     Load notes from the CSV file when the application starts.
+        """
 
         if os.path.exists("notes.csv"):
 
             try:
                 df = pd.read_csv("notes.csv")
+                self.notes = df.to_dict("records") 
 
-                self.notes = []
-
-                for i in range(len(df)):
-                    
-                    note = {
-                    "id": df.loc[i, "id"],
-                    "title": df.loc[i, "title"],
-                    "category": df.loc[i, "category"],
-                    "priority": df.loc[i, "priority"],
-                    "content": df.loc[i, "content"],
-                    "date_created": df.loc[i, "date_created"],
-                    "last_modified": df.loc[i, "last_modified"],
-                    "status": df.loc[i, "status"],
-                    "source": df.loc[i, "source"]
-                }
-
-                    self.notes.append(note)
-
-            except EmptyDataError:
+            except Exception:
                 self.notes = []
 
         else:
@@ -82,22 +109,30 @@ class NotesManager:
     
     
     def display_note(self, note):
+        
+        """
+      Display the details of a single note.
+         """
 
-         print("\n------------------------------")
+        print("\n------------------------------")
 
-         print(f"ID : {note['id']}")
-         print(f"Title : {note['title']}")
-         print(f"Category : {note['category']}")
-         print(f"Priority : {note['priority']}")
-         print(f"Content : {note['content']}")
-         print(f"Status : {note['status']}")
-         print(f"Source : {note['source']}")
-         print(f"Created : {note['date_created']}")
-         print(f"Modified : {note['last_modified']}")
+        print(f"ID : {note['id']}")
+        print(f"Title : {note['title']}")
+        print(f"Category : {note['category']}")
+        print(f"Priority : {note['priority']}")
+        print(f"Content : {note['content']}")
+        print(f"Status : {note['status']}")
+        print(f"Source : {note['source']}")
+        print(f"Created : {note['date_created']}")
+        print(f"Modified : {note['last_modified']}")
 
-         print("------------------------------")
+        print("------------------------------")
         
     def view_notes(self):
+        
+        """
+      Display all available notes.
+        """
         
         print("\n-----ALL NOTES-----\n")
         
@@ -112,6 +147,12 @@ class NotesManager:
     
     def search_note(self):
         
+        """
+        Search notes using ID, title, category or priority.
+        """
+        
+        
+        
         print("\n========== SEARCH NOTE ==========")
 
         print("1. Search by ID")
@@ -124,8 +165,13 @@ class NotesManager:
         found = False
 
         if choice == "1":
-            search_id = int(input("Enter Note ID: "))
-
+            
+            try:
+                search_id=int(input("ENTER NOTE ID:"))
+            except ValueError:
+                print("Please enter a valid ID.")
+                return
+            
             for note in self.notes:
                 if note["id"] == search_id:
                     self.display_note(note)
@@ -159,15 +205,23 @@ class NotesManager:
             print("\nInvalid Choice!")
             return
 
-        if found == False:
+        if not found:
             print("\nNo Note Found.")
             
     
     def update_note(self):
+        
+        """
+       Update an existing note based on its ID.
+         """
 
         print("\n========== UPDATE NOTE ==========")
 
-        update_id = int(input("Enter Note ID : "))
+        try:
+            update_id = int(input("Enter Note ID : "))
+        except ValueError:
+            print("Please enter a valid ID.")
+            return
 
         found = False
 
@@ -193,15 +247,23 @@ class NotesManager:
 
                 break
 
-        if found == False:
+        if not found:
              print("\n❌ Note Not Found.")
              
 
     def delete_note(self):
+        
+        """
+       Delete a note permanently from the records.
+         """
 
         print("\n========== DELETE NOTE ==========")
 
-        delete_id = int(input("Enter Note ID : "))
+        try:
+            delete_id = int(input("Enter Note ID : "))
+        except ValueError:
+            print("Please enter a valid ID.")
+            return
 
         found = False
 
@@ -229,12 +291,16 @@ class NotesManager:
                     found = True
                     break
 
-        if found == False:
+        if not found:
 
             print("\n❌ Note Not Found.")
             
 
     def filter_notes(self):
+        
+        """
+      Display notes based on selected filters.
+        """
 
         print("\n========== FILTER NOTES ==========")
 
@@ -284,13 +350,20 @@ class NotesManager:
             print("\nInvalid Choice!")
             return
 
-        if found == False:
+        if not found:
 
              print("\nNo Notes Found")
              
     def change_status(self):
         
-        notes_id= int(input("enter note id:"))
+        """
+      Change the status of a note.
+        """
+        try:
+            notes_id= int(input("enter note id:"))
+        except ValueError:
+            print("Please enter a valid ID.")
+            return
         
         found = False
         
@@ -300,17 +373,17 @@ class NotesManager:
                 found = True
                 print("\nCurrent status",note['status']) 
                 
-                print("1. active")
-                print("2.completed")
+                print("1. Active")
+                print("2.Completed")
                 
                 choice = int(input("Enter choice for status:"))
                 
                 if choice == 1:
-                    note['status'] = "active"
+                    note['status'] = "Active"
                     
                     
                 elif choice == 2:
-                    note['status'] = "completed"
+                    note['status'] = "Completed"
                     
                     
                 else:
@@ -328,70 +401,136 @@ class NotesManager:
                 
         
     def analysis_report(self):
-        
+
+        """
+    Generate a detailed statistical report of stored notes.
+        """
+
         try:
             df = pd.read_csv("notes.csv")
-        except:
-            print("No notes found.")
+
+        except FileNotFoundError:
+            print("notes.csv file not found.")
             return
-        
 
-        print("\n------NOTES ANALYSIS REPORT------")
+        except pd.errors.EmptyDataError:
+            print("notes.csv is empty.")
+            return
 
-        print("Total Notes :", len(df))
+        if df.empty:
+            print("No notes available.")
+            return
+
+        print("\n========== NOTES ANALYTICS REPORT ==========\n")
+
+    # ---------------- BASIC STATISTICS ---------------- #
+
+        total_notes = len(df)
 
         active = len(df[df["status"] == "Active"])
-        print("Active Notes :", active)
-
         completed = len(df[df["status"] == "Completed"])
-        print("Completed Notes :", completed)
 
         manual = len(df[df["source"] == "Manual"])
-        print("Manual Notes :", manual)
-
         ai = len(df[df["source"] == "AI"])
-        print("AI Notes :", ai)
 
-        print("\nCategory Report")
+        completion_rate = (completed / total_notes) * 100
+        ai_usage_rate = (ai / total_notes) * 100
+  
+        print(f"Total Notes          : {total_notes}")
+        print(f"Active Notes         : {active}")
+        print(f"Completed Notes      : {completed}")
+        print(f"Completion Rate      : {completion_rate:.2f}%")
 
-        categories = df["category"].unique()
+        print(f"\nManual Notes         : {manual}")
+        print(f"AI Generated Notes   : {ai}")
+        print(f"AI Usage Rate        : {ai_usage_rate:.2f}%")
 
-        for cat in categories:
-            count = len(df[df["category"] == cat])
-            print(cat, ":", count)
+    # ---------------- CATEGORY REPORT ---------------- #
+
+        print("\n========== CATEGORY RANKING ==========")
+
+        category_counts = df["category"].value_counts()
+  
+        for category, count in category_counts.items():
+            print(f"{category:<20}: {count}")
+
+    # ---------------- PRIORITY REPORT ---------------- #
+
+        print("\n========== PRIORITY REPORT ==========")
 
         high = len(df[df["priority"] == "High"])
         medium = len(df[df["priority"] == "Medium"])
         low = len(df[df["priority"] == "Low"])
 
-        print("\nPriority Report")
-        print("High :", high)
-        print("Medium :", medium)
-        print("Low :", low)
-        
-        print("\n------NUMPY ANALYSIS------")
+        high_percent = (high / total_notes) * 100
+        medium_percent = (medium / total_notes) * 100
+        low_percent = (low / total_notes) * 100
 
-        lengths = []
+        print(f"High Priority        : {high} ({high_percent:.2f}%)")
+        print(f"Medium Priority      : {medium} ({medium_percent:.2f}%)")
+        print(f"Low Priority         : {low} ({low_percent:.2f}%)")
 
+    # ---------------- NUMPY ANALYSIS ---------------- #
+
+        character_lengths = []
+        word_counts = []
+  
         for content in df["content"]:
-            lengths.append(len(content))
 
-        lengths = np.array(lengths)
+            character_lengths.append(len(content))
 
-        print("Average Note Length :", np.mean(lengths))
-        print("Longest Note Length :", np.max(lengths))
-        print("Shortest Note Length :", np.min(lengths))
-        print("Total Characters :", np.sum(lengths))
-        
+            words = len(content.split())
+            word_counts.append(words)
+
+        character_lengths = np.array(character_lengths)
+        word_counts = np.array(word_counts)
+
+        average_characters = np.mean(character_lengths)
+        average_words = np.mean(word_counts)
+
+        longest_index = np.argmax(character_lengths)
+        shortest_index = np.argmin(character_lengths)
+
+        longest_note = df.iloc[longest_index]
+        shortest_note = df.iloc[shortest_index]
+
+        print("\n========== CONTENT ANALYSIS ==========")
+
+        print(f"Average Characters   : {average_characters:.2f}")
+        print(f"Average Words        : {average_words:.2f}")
+
+        print("\nLongest Note")
+
+        print(f"ID                   : {longest_note['id']}")
+        print(f"Title                : {longest_note['title']}")
+        print(f"Characters           : {character_lengths[longest_index]}")
+
+        print("\nShortest Note")
+
+        print(f"ID                   : {shortest_note['id']}")
+        print(f"Title                : {shortest_note['title']}")
+        print(f"Characters           : {character_lengths[shortest_index]}")
+
+        print(f"\nTotal Characters     : {np.sum(character_lengths)}")
+
+    # ---------------- EXPORT REPORT ---------------- #
+
         report = {
-    "Total Notes": [len(df)],
-    "Active Notes": [active],
-    "Completed Notes": [completed],
-    "Manual Notes": [manual],
-    "AI Notes": [ai],
-    "High Priority": [high],
-    "Medium Priority": [medium],
-    "Low Priority": [low]
+        "Total Notes": [total_notes],
+        "Active Notes": [active],
+        "Completed Notes": [completed],
+        "Completion Rate (%)": [round(completion_rate, 2)],
+        "Manual Notes": [manual],
+        "AI Notes": [ai],
+        "AI Usage Rate (%)": [round(ai_usage_rate, 2)],
+        "High Priority": [high],
+        "Medium Priority": [medium],
+        "Low Priority": [low],
+        "Average Characters": [round(average_characters, 2)],
+        "Average Words": [round(average_words, 2)],
+        "Longest Note Characters": [np.max(character_lengths)],
+        "Shortest Note Characters": [np.min(character_lengths)],
+        "Total Characters": [np.sum(character_lengths)]
         }
 
         report_df = pd.DataFrame(report)
@@ -400,30 +539,40 @@ class NotesManager:
 
         print("\nAnalysis Report Saved Successfully.")
         
+        
+        def ai_generate_note(self):
+            """
+    Generate notes using AI.
+            """
 
-    def ai_generate_note(self):
+        try:
+            topic = input("Enter Topic: ")
 
-        topic = input("Enter Topic : ")
+            if not topic.strip():
+                print("Topic cannot be empty.")
+                return
 
-        note_content = generate_note(topic)
+        
+        
+            note_content = generate_note(topic)
 
-        print("\n========== GENERATED NOTE ==========\n")
-        print(note_content)
+            print("\n========== GENERATED NOTE ==========\n")
+            print(note_content)
 
-        choice = input("\nDo you want to save this note? (yes/no): ")
+            choice = input("\nDo you want to save this note? (yes/no): ")
 
-        if choice.lower() == "yes":
+            if choice.lower() == "yes":
 
-            title = input("Enter Title : ")
-            category = input("Enter Category : ")
-            priority = input("Enter Priority (High/Medium/Low): ")
+                title = input("Enter Title : ")
+                category = input("Enter Category : ")
+                priority = input("Enter Priority (High/Medium/Low): ")
 
-            if len(self.notes) == 0:
-                new_id = 1
-            else:
-                new_id = max(note["id"] for note in self.notes) + 1
+                if len(self.notes) == 0:
+                    new_id = 1
+                else:
+                    new_id = max(note["id"] for note in self.notes) + 1
 
-            new_note = {
+                new_note = {
             "id": new_id,
             "title": title,
             "category": category,
@@ -433,38 +582,45 @@ class NotesManager:
             "content": note_content,
             "date_created": datetime.now().strftime("%d-%m-%Y"),
             "last_modified": datetime.now().strftime("%d-%m-%Y")
-            }
+                }
 
-            self.notes.append(new_note)
+                self.notes.append(new_note)
 
-            self.save_notes()
+                self.save_notes()
 
-            print("\nAI Note Saved Successfully!")
+                print("\nAI Note Saved Successfully!")
 
-        else:
+            else:
 
-            print("\nNote Not Saved.")
-            
+                print("\nNote Not Saved.")
+
+        except Exception as e:
+            print("Unable to generate note.")
+            print("Error:", e)
+
 
     def ai_summarize_note(self):
+        """
+    Generate AI summary of a note and optionally save it.
+        """
 
-        note_id = int(input("Enter Note ID : "))
+        try:
+            note_id = int(input("Enter Note ID: "))
 
-        found = False
+            found = False
 
-        for note in self.notes:
+            for note in self.notes:
 
-            if note["id"] == note_id:
+                if note["id"] == note_id:
 
-                found = True
+                    found = True
 
-                summary = summarize_note(note["content"])
+                    summary = summarize_note(note["content"])
 
-                print("\n========== SUMMARY ==========\n")
+                    print("\n========== SUMMARY ==========\n")
+                    print(summary)
 
-                print(summary)
-
-                choice = input("\nSave Summary as New Note? (yes/no): ")
+                    choice = input("\nSave Summary as New Note? (yes/no): ")
 
                 if choice.lower() == "yes":
 
@@ -473,70 +629,91 @@ class NotesManager:
                     else:
                         new_id = max(note["id"] for note in self.notes) + 1
 
-                        new_note = {
-                    "id": new_id,
-                    "title": note["title"],
-                    "category": note["category"],
-                    "priority": note["priority"],
-                    "status": "Active",
-                    "source": "AI",
-                    "content": summary,
-                    "date_created": datetime.now().strftime("%d-%m-%Y"),
-                    "last_modified": datetime.now().strftime("%d-%m-%Y")
-                    
-                        }
+                    new_note = {
+                        "id": new_id,
+                        "title": note["title"],
+                        "category": note["category"],
+                        "priority": note["priority"],
+                        "status": "Active",
+                        "source": "AI",
+                        "content": summary,
+                        "date_created": datetime.now().strftime("%d-%m-%Y"),
+                        "last_modified": datetime.now().strftime("%d-%m-%Y")
+                    }
 
                     self.notes.append(new_note)
-
                     self.save_notes()
 
                     print("\nSummary Saved Successfully.")
 
-                    break
+                break
 
-        if not found:
+            if not found:
+               print("\nNote ID Not Found.")
 
-            print("\nNote ID Not Found.")
-            
+        except ValueError:
+            print("Invalid Note ID. Please enter a number.")
+
+        except PermissionError:
+            print("Please close notes.csv and try again.")
+
+        except Exception as e:
+            print("Unable to generate summary.")
+            print("Error:", e)
 
     def ai_generate_quiz(self):
+        """
+    Generate an AI quiz from a note and optionally save it as a text file.
+        """
 
-        note_id = int(input("Enter Note ID : "))
+        try:
+             note_id = int(input("Enter Note ID: "))
 
-        found = False
+             found = False
 
-        for note in self.notes:
+             for note in self.notes:
 
-            if note["id"] == note_id:
+                 if note["id"] == note_id:
 
-                found = True
+                    found = True
 
-                quiz = generate_quiz(note["content"])
+                    quiz = generate_quiz(note["content"])
 
-                print("\n========== QUIZ ==========\n")
+                    print("\n========== QUIZ ==========\n")
+                    print(quiz)
 
-                print(quiz)
+                    choice = input("\nSave Quiz in Text File? (yes/no): ")
 
-                choice = input("\nSave Quiz in Text File? (yes/no): ")
-
-                if choice.lower() == "yes":
+                 if choice.lower() == "yes":
 
                     file_name = f"Quiz_{note_id}.txt"
 
                     with open(file_name, "w", encoding="utf-8") as file:
-
                         file.write(quiz)
 
-                        print("\nQuiz Saved Successfully.")
+                    print("\nQuiz Saved Successfully.")
 
-                        break
+                    break
 
-        if not found:
+                 if not found:
+                     print("\nNote ID Not Found.")
 
-            print("\nNote ID Not Found.")
+        except ValueError:
+            print("Invalid Note ID. Please enter a valid number.")
+
+        except PermissionError:
+            print("Permission denied while saving the quiz.")
+
+        except Exception as e:
+            print("Unable to generate quiz.")
+            print("Error:", e)
             
     
     def ai_menu(self):
+        
+        """
+        Display AI feature options for notes.
+        """
 
         while True:
 

@@ -1,14 +1,13 @@
 import groq
 import os
 
-
 client = groq.Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-
-
-# Generate Short Note
-
 def generate_note(topic):
+    
+    """
+Generate study notes using Groq AI.
+"""
 
     prompt = f"""
 Generate short study notes on the topic: {topic}
@@ -19,8 +18,8 @@ Rules:
 3. Student friendly explanation.
 4. Return only the note.
 """
-
-    response = client.chat.completions.create(
+    try:
+        response = client.chat.completions.create(
 
         model="llama-3.3-70b-versatile",
 
@@ -33,13 +32,18 @@ Rules:
 
     )
 
-    return response.choices[0].message.content
+        return response.choices[0].message.content
+    
+    except Exception as e:
+        return f"Unable to connect to AI service.\nError: {e}"
 
 
 
-# Summarize Existing Note
 
 def summarize_note(note):
+    """
+Generate a short summary of a note.
+    """
 
     prompt = f"""
 Summarize the following study note.
@@ -54,8 +58,9 @@ Study Note:
 
 {note}
 """
-
-    response = client.chat.completions.create(
+    
+    try:
+        response = client.chat.completions.create(
 
         model="llama-3.3-70b-versatile",
 
@@ -68,13 +73,17 @@ Study Note:
 
     )
 
-    return response.choices[0].message.content
+        return response.choices[0].message.content
+    
+    except Exception as e:
+        return f"Unable to connect to AI service.\nError: {e}"
 
-
-
-# Generate Quiz
 
 def generate_quiz(note):
+    
+    """
+Generate multiple-choice questions from a note.
+    """
 
     prompt = f"""
 Generate 5 multiple choice questions from the following study note.
@@ -90,8 +99,8 @@ Study Note:
 
 {note}
 """
-
-    response = client.chat.completions.create(
+    try:
+        response = client.chat.completions.create(
 
         model="llama-3.3-70b-versatile",
 
@@ -104,4 +113,8 @@ Study Note:
 
     )
 
-    return response.choices[0].message.content
+        return response.choices[0].message.content
+    
+    except Exception as e:
+        return f"Unable to connect to AI service.\nError: {e}"
+

@@ -1,12 +1,17 @@
 from notes import NotesManager
 
+"""
+Run the main menu of the Notes Manager application.
+"""
+
 def __main__():
     
     manager = NotesManager()
-
+   
     while True:
     
-        print("\n-----Notes Manager-----")
+        print("\n-----Notes Manager-----\n")
+        
         print("1. Add Note")
         print("2.View Note")
         print("3.Search Note")
