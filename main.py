@@ -20,8 +20,9 @@ def __main__():
         print("6. filter_notes")
         print("7.Change_status")
         print("8.Analysis Report")
-        print("9. AI feature")
-        print("10. Exit")
+        print("9. Visualization Report")
+        print("10. AI feature")
+        print("11. Exit")
     
         try:
         
@@ -50,12 +51,15 @@ def __main__():
         
             elif choice == 8:
                 manager.analysis_report()
-        
+                
             elif choice == 9:
+                manager.visualization_report()
+        
+            elif choice == 10:
                 manager.ai_menu()
                 
     
-            elif choice == 10:
+            elif choice == 11:
                 print("\n Thank You for using Notes Manager!")
                 break
     

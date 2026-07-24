@@ -1,6 +1,8 @@
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import os
 from ai_helper import generate_note , summarize_note , generate_quiz
 
@@ -540,64 +542,175 @@ class NotesManager:
         print("\nAnalysis Report Saved Successfully.")
         
         
-        def ai_generate_note(self):
-            """
-    Generate notes using AI.
-            """
+    def visualization_report(self):
 
-        try:
-            topic = input("Enter Topic: ")
+            try:
+                df = pd.read_csv("notes.csv")
 
-            if not topic.strip():
-                print("Topic cannot be empty.")
+            except FileNotFoundError:
+                print("notes.csv file not found.")
                 return
 
+            except pd.errors.EmptyDataError:
+                print("notes.csv is empty.")
+                return
+
+            if df.empty:
+                print("No notes available.")
+                return
+            
+            # category pie chart
+            category_counts = df["category"].value_counts()
+
+            plt.figure(figsize=(7, 7))
+
+            plt.pie(
+                category_counts.values,
+                labels=category_counts.index,
+                autopct="%1.1f%%",
+                startangle=90
+               )
+
+            plt.title("Notes Distribution by Category")
+
+            plt.axis("equal")
+
+            plt.savefig(
+                "reports/charts/category_pie.png",
+                 dpi=300,
+                 bbox_inches="tight"
+             )
+
+            plt.close()
+            
+            # Priority bar chart
+            priority_counts = df["priority"].value_counts()
+            
+            plt.figure(figsize=(8,5))
+            
+            plt.bar(
+                priority_counts.index,
+                priority_counts.values
+               )
+            plt.title("Priority Distribution")
+            plt.xlabel("Priority")
+            plt.ylabel("Notes")
+            
+            plt.savefig(
+                 "reports/charts/priority_bar.png",
+                  dpi=300,
+                  bbox_inches="tight"
+                    )
+            
+            # ---------------- STATUS PIE CHART ---------------- #
+
+            status_counts = df["status"].value_counts()
+
+            plt.figure(figsize=(7,7))
+
+            plt.pie(
+               status_counts.values,
+               labels=status_counts.index,
+               autopct="%1.1f%%",
+               startangle=90
+                )
+
+            plt.title("Status Distribution")
+
+            plt.axis("equal")
+
+            plt.savefig(
+                "reports/charts/status_pie.png",
+                 dpi=300,
+                 bbox_inches="tight"
+                   )
+
+            plt.close()
+
+            print("Status Pie Chart Generated Successfully.")
+            
+            # ---------------- AI VS MANUAL BAR CHART ---------------- #
+
+            source_counts = df["source"].value_counts()
+
+            plt.figure(figsize=(8,5))
+
+            plt.bar(
+               source_counts.index,
+               source_counts.values
+             )
+
+            plt.title("AI vs Manual Notes")
+
+            plt.xlabel("Source")
+
+            plt.ylabel("Number of Notes")
+
+            plt.savefig(
+                "reports/charts/source_bar.png",
+                 dpi=300,
+                 bbox_inches="tight"
+               )
+
+            plt.close()
+
+            print("AI vs Manual Chart Generated Successfully.")
         
-        
-            note_content = generate_note(topic)
+def ai_generate_note(self):
+    """
+    Generate notes using AI.
+    """
 
-            print("\n========== GENERATED NOTE ==========\n")
-            print(note_content)
+    try:
+        topic = input("Enter Topic: ")
 
-            choice = input("\nDo you want to save this note? (yes/no): ")
+        if not topic.strip():
+            print("Topic cannot be empty.")
+            return
 
-            if choice.lower() == "yes":
+        note_content = generate_note(topic)
 
-                title = input("Enter Title : ")
-                category = input("Enter Category : ")
-                priority = input("Enter Priority (High/Medium/Low): ")
+        print("\n========== GENERATED NOTE ==========\n")
+        print(note_content)
 
-                if len(self.notes) == 0:
-                    new_id = 1
-                else:
-                    new_id = max(note["id"] for note in self.notes) + 1
+        choice = input("\nDo you want to save this note? (yes/no): ")
 
-                new_note = {
-            "id": new_id,
-            "title": title,
-            "category": category,
-            "priority": priority,
-            "status": "Active",
-            "source": "AI",
-            "content": note_content,
-            "date_created": datetime.now().strftime("%d-%m-%Y"),
-            "last_modified": datetime.now().strftime("%d-%m-%Y")
-                }
+        if choice.lower() == "yes":
 
-                self.notes.append(new_note)
+            title = input("Enter Title : ")
+            category = input("Enter Category : ")
+            priority = input("Enter Priority (High/Medium/Low): ")
 
-                self.save_notes()
-
-                print("\nAI Note Saved Successfully!")
-
+            if len(self.notes) == 0:
+                new_id = 1
             else:
+                new_id = max(note["id"] for note in self.notes) + 1
 
-                print("\nNote Not Saved.")
+            new_note = {
+                "id": new_id,
+                "title": title,
+                "category": category,
+                "priority": priority,
+                "status": "Active",
+                "source": "AI",
+                "content": note_content,
+                "date_created": datetime.now().strftime("%d-%m-%Y"),
+                "last_modified": datetime.now().strftime("%d-%m-%Y")
+            }
 
-        except Exception as e:
-            print("Unable to generate note.")
-            print("Error:", e)
+            self.notes.append(new_note)
 
+            self.save_notes()
+
+            print("\nAI Note Saved Successfully!")
+
+        # else:
+        #     print("\nNote Not Saved.")
+
+    except Exception as e:
+        print("Unable to generate note.")
+        print("Error:", e)    
+    
 
     def ai_summarize_note(self):
         """
