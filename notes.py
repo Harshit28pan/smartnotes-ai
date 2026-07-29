@@ -559,22 +559,47 @@ class NotesManager:
                 print("No notes available.")
                 return
             
+            ## MATPLOTLIB 
+            
             # category pie chart
             category_counts = df["category"].value_counts()
 
             plt.figure(figsize=(7, 7))
+            
+            colors = [
+    "#4CAF50",
+    "#2196F3",
+    "#FFC107",
+    "#FF5722",
+    "#9C27B0",
+    "#00BCD4"
+                 ]
 
             plt.pie(
                 category_counts.values,
                 labels=category_counts.index,
                 autopct="%1.1f%%",
-                startangle=90
+                startangle=90,
+                colors = colors,
+                shadow=True,
+                wedgeprops={
+                   "edgecolor":"white"
+                   },
+                textprops={
+                  "fontsize":11,
+                  "fontweight":"bold"
+                 }
                )
 
-            plt.title("Notes Distribution by Category")
+            plt.title(
+                  "Category Distribution",
+                   fontsize=15,
+                   fontweight="bold"
+                  )
 
             plt.axis("equal")
-
+            
+            plt.tight_layout()
             plt.savefig(
                 "reports/charts/category_pie.png",
                  dpi=300,
@@ -584,46 +609,108 @@ class NotesManager:
             plt.close()
             
             # Priority bar chart
+            
+            # ---------------- PRIORITY BAR CHART ---------------- #
+
             priority_counts = df["priority"].value_counts()
-            
+
             plt.figure(figsize=(8,5))
-            
-            plt.bar(
-                priority_counts.index,
-                priority_counts.values
-               )
-            plt.title("Priority Distribution")
-            plt.xlabel("Priority")
-            plt.ylabel("Notes")
-            
+
+            bars = plt.bar(
+                      priority_counts.index,
+                      priority_counts.values,
+                      color=["#EF5350", "#FFCA28", "#66BB6A"]
+                       )
+
+            plt.title(
+                   "Priority Distribution",
+                    fontsize=15,
+                    fontweight="bold"
+                   )
+
+            plt.xlabel(
+                "Priority",
+                 fontsize=12
+                   )
+
+            plt.ylabel(
+                  "Number of Notes",
+                   fontsize=12
+                  )
+
+            plt.grid(
+                axis="y",
+                linestyle="--",
+                alpha=0.5
+                )
+
+            for bar in bars:
+
+                height = bar.get_height()
+
+                plt.text(
+               bar.get_x() + bar.get_width()/2,
+               height,
+               int(height),
+               ha="center",
+               va="bottom",
+               fontsize=11,
+               fontweight="bold"
+             )
+
+                plt.tight_layout()
+
             plt.savefig(
-                 "reports/charts/priority_bar.png",
-                  dpi=300,
-                  bbox_inches="tight"
-                    )
+                       "reports/charts/priority_bar.png",
+                        dpi=300,
+                        bbox_inches="tight"
+                          )
+ 
+            plt.close()
+
+            print("Priority Bar Chart Generated Successfully.")
             
+            
+
             # ---------------- STATUS PIE CHART ---------------- #
 
             status_counts = df["status"].value_counts()
 
+            colors = [
+                     "#42A5F5",
+                     "#66BB6A"
+                     ]
+
             plt.figure(figsize=(7,7))
 
             plt.pie(
-               status_counts.values,
-               labels=status_counts.index,
-               autopct="%1.1f%%",
-               startangle=90
-                )
+    status_counts.values,
+    labels=status_counts.index,
+    autopct="%1.1f%%",
+    startangle=90,
+    colors=colors,
+    wedgeprops={"edgecolor":"white"},
+    textprops={
+        "fontsize":11,
+        "fontweight":"bold"
+    }
+)
 
-            plt.title("Status Distribution")
+            plt.title(
+    "Status Distribution",
+    fontsize=15,
+    fontweight="bold"
+)
 
             plt.axis("equal")
 
+            plt.tight_layout()
+
             plt.savefig(
-                "reports/charts/status_pie.png",
-                 dpi=300,
-                 bbox_inches="tight"
-                   )
+    "reports/charts/status_pie.png",
+    dpi=300,
+    bbox_inches="tight"
+)
 
             plt.close()
 
@@ -631,30 +718,255 @@ class NotesManager:
             
             # ---------------- AI VS MANUAL BAR CHART ---------------- #
 
+            # ---------------- SOURCE BAR CHART ---------------- #
+
             source_counts = df["source"].value_counts()
 
             plt.figure(figsize=(8,5))
 
-            plt.bar(
-               source_counts.index,
-               source_counts.values
-             )
+            bars = plt.bar(
+                 source_counts.index,
+                 source_counts.values,
+                 color=["#42A5F5", "#AB47BC"]
+                   )
 
-            plt.title("AI vs Manual Notes")
+            plt.title(
+                   "Notes Source Distribution",
+                    fontsize=15,
+                    fontweight="bold"
+                     )
 
-            plt.xlabel("Source")
+            plt.xlabel(
+                   "Source",
+                    fontsize=12
+                )
 
-            plt.ylabel("Number of Notes")
+            plt.ylabel(
+                   "Number of Notes",
+                    fontsize=12
+                 )
+
+            plt.grid(
+                   axis="y",
+                   linestyle="--",
+                   alpha=0.5
+                   )
+
+            for bar in bars:
+
+                height = bar.get_height()
+
+                plt.text(
+                     bar.get_x() + bar.get_width()/2,
+                     height,
+                     f"{int(height)}",
+                     ha="center",
+                     va="bottom",
+                     fontsize=11,
+                     fontweight="bold"
+                      )
+
+            plt.tight_layout()
 
             plt.savefig(
-                "reports/charts/source_bar.png",
-                 dpi=300,
-                 bbox_inches="tight"
+                 "reports/charts/source_bar.png",
+                  dpi=300,
+                  bbox_inches="tight"
                )
 
             plt.close()
 
-            print("AI vs Manual Chart Generated Successfully.")
+            print("Source Bar Chart Generated Successfully.")            
+
+            ## SEABORN 
+            
+            # ---------------- CATEGORY COUNTPLOT ---------------- #
+
+         
+
+            plt.figure(figsize=(8,5))
+
+            sns.countplot(
+                      data=df,
+                      x="category",
+                      palette="Set2"
+                     )
+
+            plt.title(
+                      "Category Distribution",
+                       fontsize=15,
+                       fontweight="bold"
+                    )
+
+            plt.xlabel(
+                    "Category",
+                     fontsize=12
+                     )
+
+            plt.ylabel(
+                    "Number of Notes",
+                     fontsize=12
+                     )
+
+            plt.grid(
+                  axis="y",
+                  linestyle="--",
+                  alpha=0.5
+                  )
+
+            plt.tight_layout()
+
+            plt.savefig(
+                 "reports/charts/category_countplot.png",
+                  dpi=300,
+                  bbox_inches="tight"
+                 )
+
+            plt.close()
+
+            print("Category Countplot Generated Successfully.")
+            
+            
+            # ---------------- PRIORITY COUNTPLOT ---------------- #
+
+            plt.figure(figsize=(8,5))
+
+            ax = sns.countplot(
+                             data=df,
+                             x="priority",
+                             palette="Set2"
+                            )
+
+            plt.title(
+                       "Priority Distribution",
+                        fontsize=15,
+                        fontweight="bold"
+                  )
+
+            plt.xlabel(
+                    "Priority",
+                     fontsize=12
+                   )
+
+            plt.ylabel(
+                    "Number of Notes",
+                     fontsize=12
+                     )
+
+            plt.grid(
+                   axis="y",
+                   linestyle="--",
+                   alpha=0.5
+                  )
+
+            # Show values on top of bars
+
+            for container in ax.containers:
+                        ax.bar_label(
+                        container,
+                        fontsize=11,
+                        fontweight="bold"
+                        )
+
+            plt.tight_layout()
+
+            plt.savefig(
+                          "reports/charts/priority_countplot.png",
+                           dpi=300,
+                           bbox_inches="tight"
+                           )
+
+            plt.close()
+
+            print("Priority Countplot Generated Successfully.")
+            
+            # ---------------- NOTE LENGTH HISTOGRAM ---------------- #
+
+            df['note-length'] = df['content'].str.len()
+            
+            plt.figure(figsize=(8,5))
+
+            sns.histplot(
+                    data=df,
+                    x="note_length",
+                    bins='auto',
+                    kde=True,
+                    color="#42A5F5"
+                    )
+
+            plt.title(
+                   "Distribution of Note Length",
+                    fontsize=15,
+                    fontweight="bold"
+              )
+
+            plt.xlabel(
+                   "Number of Characters",
+                   fontsize=12
+                   )
+
+            plt.ylabel(
+                  "Frequency",
+                   fontsize=12
+                   )
+
+            plt.grid(
+                axis="y",
+                linestyle="--",
+                alpha=0.5
+                )
+
+            plt.tight_layout()
+
+            plt.savefig(
+                    "reports/charts/note_length_histogram.png",
+                     dpi=300,
+                     bbox_inches="tight"
+               )
+
+            plt.close()
+
+            print("Histogram Generated Successfully.")
+
+            # ---------------- NOTE LENGTH BOXPLOT ---------------- #
+
+
+            plt.figure(figsize=(8,5))
+
+            sns.boxplot(
+                    data=df,
+                    x="note_length",
+                    color="#66BB6A"
+                     )
+
+            plt.title(
+                    "Note Length Analysis",
+                    fontsize=15,
+                    fontweight="bold"
+                     )
+
+            plt.xlabel(
+                 "Number of Characters",
+                  fontsize=12
+                      )
+
+            plt.grid(
+                   axis="x",
+                   linestyle="--",
+                   alpha=0.5
+)
+
+            plt.tight_layout()
+
+            plt.savefig(
+                 "reports/charts/note_length_boxplot.png",
+                  dpi=300,
+                  bbox_inches="tight"
+                  )
+
+            plt.close()
+
+            print("Boxplot Generated Successfully.")
         
 def ai_generate_note(self):
     """
