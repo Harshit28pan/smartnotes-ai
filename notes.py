@@ -2,9 +2,17 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 import os
+import seaborn as sns
+
 from ai_helper import generate_note , summarize_note , generate_quiz
+
+from database import (
+    add_note as db_add_note,
+    get_notes as db_get_notes,
+    update_note as db_update_note,
+    delete_note as db_delete_note
+)
 
 
 class NotesManager:
@@ -15,99 +23,69 @@ class NotesManager:
     """
     
     def __init__(self):
-        
-        """
-    Initialize the Notes Manager and load all existing notes.
-        """
-        
+
         self.notes = []
-        self.load_notes()
-        print("Notes Manager started successully")
-        
+
+        try:
+            self.notes = db_get_notes()
+        except Exception as e:
+            print("❌ Unable to load notes from MySQL:", e)
+
+        print("Notes Manager started successfully")
+
         if self.notes:
 
             print("\nPreviously Saved Notes\n")
- 
-            for note in self.notes:
-                self.display_note(note)
-  
+
+        for note in self.notes:
+            self.display_note(note)
+
         else:
-           print("No saved notes available.")
+            print("No saved notes available.")
         
     def add_note(self):
-        """
-    Collect note details from the user and save the note.
-        """
+
         print("\n------ ADD NEW NOTE ------")
 
         try:
-           title = input("Enter Note Title: ")
 
-           if not title.strip():
-               print("Title cannot be empty.")
-               return
+            title = input("Enter Note Title: ")
 
-           category = input("Enter Category: ")
-           priority = input("Enter Priority (High/Medium/Low): ")
-           content = input("Enter Note Content: ")
+            if not title.strip():
+                print("Title cannot be empty.")
+                return
 
-           if not content.strip():
+            category = input("Enter Category: ")
+            priority = input("Enter Priority (High/Medium/Low): ")
+            content = input("Enter Note Content: ")
+
+            if not content.strip():
                 print("Content cannot be empty.")
                 return
-           if self.notes:
-               new_id = max(note["id"] for note in self.notes) + 1
-           else:
-               new_id = 1
 
-           note = {
-            "id": new_id,
+            today = datetime.now().strftime("%Y-%m-%d")
+
+            note = {
             "title": title,
             "category": category,
             "priority": priority,
-            "content": content,
-            "date_created": datetime.now().strftime("%d-%m-%Y"),
-            "last_modified": datetime.now().strftime("%d-%m-%Y"),
             "status": "Active",
-            "source": "Manual"
-              }
-           self.notes.append(note)
-           self.save_notes()
-           print("\nNote added successfully.")
+            "source": "Manual",
+            "content": content,
+            "date_created": today,
+            "last_modified": today
+            }
+
+            db_add_note(note)
+
+            # Refresh self.notes from MySQL
+            self.notes = db_get_notes()
+
+            print("\n✅ Note added successfully.")
+
         except Exception as e:
-            print("Error:", e)
-        
+                print("❌ Error:", e)
     
-    def save_notes(self):
-        
-        """
-     Save all notes into the CSV file.
-        """
-        df= pd.DataFrame(self.notes)
-        
-        try:
-            df.to_csv("notes.csv",index=False)
-        except PermissionError:
-            print("Please close notes.csv and try again.")
-        except Exception as e:
-            print(e)
-        
-    def load_notes(self):
-        
-        """
-     Load notes from the CSV file when the application starts.
-        """
-
-        if os.path.exists("notes.csv"):
-
-            try:
-                df = pd.read_csv("notes.csv")
-                self.notes = df.to_dict("records") 
-
-            except Exception:
-                self.notes = []
-
-        else:
-            self.notes = []
     
     
     def display_note(self, note):
@@ -131,20 +109,17 @@ class NotesManager:
         print("------------------------------")
         
     def view_notes(self):
-        
-        """
-      Display all available notes.
-        """
-        
+
         print("\n-----ALL NOTES-----\n")
-        
+
+        self.notes = db_get_notes()
+
         if len(self.notes) == 0:
             print("No notes available")
             return
-        
+
         for note in self.notes:
             self.display_note(note)
-    
         
     
     def search_note(self):
@@ -163,6 +138,9 @@ class NotesManager:
         print("4. Search by Priority")
 
         choice = input("\nEnter your choice: ")
+        
+        # Get latest notes from MySQL
+        self.notes = db_get_notes()
 
         found = False
 
@@ -212,18 +190,22 @@ class NotesManager:
             
     
     def update_note(self):
-        
+
         """
-       Update an existing note based on its ID.
-         """
+    Update an existing note by ID.
+        """
 
         print("\n========== UPDATE NOTE ==========")
 
         try:
             update_id = int(input("Enter Note ID : "))
+
         except ValueError:
             print("Please enter a valid ID.")
             return
+
+        # Get latest notes from MySQL
+        self.notes = db_get_notes()
 
         found = False
 
@@ -231,41 +213,74 @@ class NotesManager:
 
             if note["id"] == update_id:
 
-                print("\nCurrent Note Details")
+                found = True
+
+                print("\nCurrent Note Details:")
                 self.display_note(note)
 
-                note["title"] = input("Enter New Title : ")
-                note["category"] = input("Enter New Category : ")
-                note["priority"] = input("Enter New Priority : ")
-                note["content"] = input("Enter New Content : ")
+                print("\nEnter New Details:")
 
-                note["last_modified"] = datetime.now().strftime("%d-%m-%Y")
+                title = input("Enter New Title : ")
+                category = input("Enter New Category : ")
+                priority = input("Enter New Priority : ")
+                content = input("Enter New Content : ")
 
-                self.save_notes()
+                # Keep existing values if user leaves field empty
+                if not title.strip():
+                    title = note["title"]
+
+                if not category.strip():
+                    category = note["category"]
+
+                if not priority.strip():
+                    priority = note["priority"]
+
+                if not content.strip():
+                    content = note["content"]
+
+                # Update date
+                last_modified = datetime.now().strftime("%Y-%m-%d")
+
+                # Update MySQL
+                db_update_note(
+                update_id,
+                title,
+                category,
+                priority,
+                note["status"],
+                note["source"],
+                content
+                )
+ 
+                # Refresh notes from MySQL
+                self.notes = db_get_notes()
 
                 print("\n✅ Note Updated Successfully!")
-
-                found = True
 
                 break
 
         if not found:
-             print("\n❌ Note Not Found.")
+
+            print("\n❌ Note Not Found.")
              
 
     def delete_note(self):
-        
+
         """
-       Delete a note permanently from the records.
-         """
+    Delete a note by ID.
+        """
 
         print("\n========== DELETE NOTE ==========")
 
         try:
-            delete_id = int(input("Enter Note ID : "))
+             delete_id = int(input("Enter Note ID : "))
+
         except ValueError:
-            print("Please enter a valid ID.")
-            return
+             print("Please enter a valid ID.")
+             return
+  
+        # Get latest notes from MySQL
+        self.notes = db_get_notes()
 
         found = False
 
@@ -273,35 +288,45 @@ class NotesManager:
 
             if note["id"] == delete_id:
 
+                found = True
+
+                print("\nNote to be deleted:")
                 self.display_note(note)
 
-                confirm = input("\nAre you sure? (yes/no) : ").lower()
+                confirm = input(
+                "\nAre you sure you want to delete this note? (yes/no): "
+                ).lower()
 
                 if confirm == "yes":
-                    
-                    found = True
 
-                    self.notes.remove(note)
-                    self.save_notes()
+                    result = db_delete_note(delete_id)
 
-                    print("\n✅ Note Deleted Successfully!")
+                    if result:
+
+                        # Refresh notes from MySQL
+                        self.notes = db_get_notes()
+
+                        print("\n✅ Note Deleted Successfully!")
+
+                    else:
+
+                        print("\n❌ Note could not be deleted.")
 
                 else:
 
-                    print("\nDeletion Cancelled.")
-
-                    found = True
-                    break
+                    print("\n❌ Deletion Cancelled.")
+  
+                break
 
         if not found:
 
             print("\n❌ Note Not Found.")
-            
+
 
     def filter_notes(self):
-        
+
         """
-      Display notes based on selected filters.
+        Filter notes by category, priority or status.
         """
 
         print("\n========== FILTER NOTES ==========")
@@ -310,726 +335,477 @@ class NotesManager:
         print("2. Filter by Priority")
         print("3. Filter by Status")
 
-        choice = input("\nEnter your choice : ")
- 
-        found = False
+        choice = input("\nEnter your choice: ")
+
+        # Get latest notes from MySQL
+        self.notes = db_get_notes()
+
+        filtered_notes = []
 
         if choice == "1":
 
-            category = input("Enter Category : ").lower()
+            category = input("Enter Category: ").lower()
 
             for note in self.notes:
 
                 if note["category"].lower() == category:
-
-                    self.display_note(note)
-                    found = True
+                    filtered_notes.append(note)
 
         elif choice == "2":
 
-            priority = input("Enter Priority (High/Medium/Low) : ").lower()
+            priority = input(
+            "Enter Priority (High/Medium/Low): "
+            ).lower()
 
             for note in self.notes:
 
                 if note["priority"].lower() == priority:
-
-                    self.display_note(note)
-                    found = True
+                    filtered_notes.append(note)
 
         elif choice == "3":
 
-            status = input("Enter Status (Active/Completed) : ").lower()
+            status = input(
+            "Enter Status (Active/Completed): "
+            ).lower()
 
             for note in self.notes:
 
                 if note["status"].lower() == status:
-
-                    self.display_note(note)
-                    found = True
+                    filtered_notes.append(note)
 
         else:
 
-            print("\nInvalid Choice!")
+            print("\n❌ Invalid Choice!")
             return
 
-        if not found:
+        if not filtered_notes:
 
-             print("\nNo Notes Found")
-             
+            print("\nNo matching notes found.")
+            return
+
+        print("\n========== FILTERED NOTES ==========")
+
+        for note in filtered_notes:
+
+             self.display_note(note)    
+
     def change_status(self):
-        
+
         """
-      Change the status of a note.
+        Change the status of a note.
         """
+
+        print("\n========== CHANGE STATUS ==========")
+
         try:
-            notes_id= int(input("enter note id:"))
+            note_id = int(input("Enter Note ID: "))
+
         except ValueError:
             print("Please enter a valid ID.")
             return
-        
+
+        # Get latest notes from MySQL
+        self.notes = db_get_notes()
+
         found = False
-        
+
         for note in self.notes:
-            if note['id'] == notes_id:
-                
+
+            if note["id"] == note_id:
+
                 found = True
-                print("\nCurrent status",note['status']) 
-                
-                print("1. Active")
-                print("2.Completed")
-                
-                choice = int(input("Enter choice for status:"))
-                
-                if choice == 1:
-                    note['status'] = "Active"
-                    
-                    
-                elif choice == 2:
-                    note['status'] = "Completed"
-                    
-                    
+
+                print("\nCurrent Status:", note["status"])
+
+                print("\n1. Active")
+                print("2. Completed")
+ 
+                choice = input("\nEnter new status: ")
+
+                if choice == "1":
+                    new_status = "Active"
+
+                elif choice == "2":
+                    new_status = "Completed"
+
                 else:
-                    print("Invalid input")
+                    print("\n❌ Invalid choice.")
                     return
-                
-                self.save_notes()
-                print("\nStatus updated successfully")
-                return
-                    
-                
+
+                # Update status in MySQL
+                db_update_note(
+                note_id,
+                note["title"],
+                note["category"],
+                note["priority"],
+                new_status,
+                note["source"],
+                note["content"]
+                )
+
+                # Refresh notes
+                self.notes = db_get_notes()
+
+                print(
+                     f"\n✅ Status changed to {new_status} successfully!"
+                )
+
+                break
+
         if not found:
-            print("Invalid")
-            
-                
+
+            print("\n❌ Note Not Found.")
         
     def analysis_report(self):
 
         """
-    Generate a detailed statistical report of stored notes.
+         Generate analysis report using MySQL data.
         """
 
-        try:
-            df = pd.read_csv("notes.csv")
+        print("\n========== ANALYSIS REPORT ==========\n")
 
-        except FileNotFoundError:
-            print("notes.csv file not found.")
+        # Get latest data from MySQL
+        self.notes = db_get_notes()
+
+        if not self.notes:
+
+            print("No notes available for analysis.")
             return
 
-        except pd.errors.EmptyDataError:
-            print("notes.csv is empty.")
-            return
+        # Convert MySQL data into DataFrame
+        df = pd.DataFrame(self.notes)
 
-        if df.empty:
-            print("No notes available.")
-            return
-
-        print("\n========== NOTES ANALYTICS REPORT ==========\n")
-
-    # ---------------- BASIC STATISTICS ---------------- #
+        # ---------------- BASIC KPIs ---------------- #
 
         total_notes = len(df)
 
-        active = len(df[df["status"] == "Active"])
-        completed = len(df[df["status"] == "Completed"])
+        active_notes = len(
+        df[df["status"].str.lower() == "active"]
+        )
 
-        manual = len(df[df["source"] == "Manual"])
-        ai = len(df[df["source"] == "AI"])
+        completed_notes = len(
+        df[df["status"].str.lower() == "completed"]
+        )
 
-        completion_rate = (completed / total_notes) * 100
-        ai_usage_rate = (ai / total_notes) * 100
-  
-        print(f"Total Notes          : {total_notes}")
-        print(f"Active Notes         : {active}")
-        print(f"Completed Notes      : {completed}")
-        print(f"Completion Rate      : {completion_rate:.2f}%")
+        manual_notes = len(
+        df[df["source"].str.lower() == "manual"]
+        )
 
-        print(f"\nManual Notes         : {manual}")
-        print(f"AI Generated Notes   : {ai}")
-        print(f"AI Usage Rate        : {ai_usage_rate:.2f}%")
+        ai_notes = len(
+        df[df["source"].str.lower() == "ai"]
+        )
+
+    # ---------------- CONTENT ANALYSIS ---------------- #
+
+        df["word_count"] = (
+        df["content"]
+        .fillna("")
+        .astype(str)
+        .str.split()
+        .str.len()
+    )
+
+        df["character_count"] = (
+        df["content"]
+        .fillna("")
+        .astype(str)
+        .str.len()
+        )
+
+        average_words = df["word_count"].mean()
+
+        average_characters = df["character_count"].mean()
+
+        longest_note = df["word_count"].max()
+
+        shortest_note = df["word_count"].min()
+
+    # ---------------- REPORT ---------------- #
+
+        print("Total Notes       :", total_notes)
+        print("Active Notes      :", active_notes)
+        print("Completed Notes   :", completed_notes)
+
+        print("Manual Notes      :", manual_notes)
+        print("AI Notes          :", ai_notes)
+
+        print(
+        "Average Words     :",
+        round(average_words, 2)
+        )
+
+        print(
+        "Average Characters:",
+        round(average_characters, 2)
+        )
+
+        print(
+        "Longest Note      :",
+        longest_note,
+        "words"
+    )
+
+        print(
+        "Shortest Note     :",
+        shortest_note,
+        "words"
+        )
 
     # ---------------- CATEGORY REPORT ---------------- #
 
-        print("\n========== CATEGORY RANKING ==========")
+        print("\n----- CATEGORY REPORT -----")
 
-        category_counts = df["category"].value_counts()
-  
-        for category, count in category_counts.items():
-            print(f"{category:<20}: {count}")
+        category_report = (
+        df["category"]
+        .value_counts()
+        )
+
+        print(category_report)
 
     # ---------------- PRIORITY REPORT ---------------- #
 
-        print("\n========== PRIORITY REPORT ==========")
+        print("\n----- PRIORITY REPORT -----")
 
-        high = len(df[df["priority"] == "High"])
-        medium = len(df[df["priority"] == "Medium"])
-        low = len(df[df["priority"] == "Low"])
+        priority_report = (
+        df["priority"]
+        .value_counts()
+        )
 
-        high_percent = (high / total_notes) * 100
-        medium_percent = (medium / total_notes) * 100
-        low_percent = (low / total_notes) * 100
+        print(priority_report)
 
-        print(f"High Priority        : {high} ({high_percent:.2f}%)")
-        print(f"Medium Priority      : {medium} ({medium_percent:.2f}%)")
-        print(f"Low Priority         : {low} ({low_percent:.2f}%)")
+        # ---------------- STATUS REPORT ---------------- #
 
-    # ---------------- NUMPY ANALYSIS ---------------- #
+        print("\n----- STATUS REPORT -----")
 
-        character_lengths = []
-        word_counts = []
-  
-        for content in df["content"]:
+        status_report = (
+        df["status"]
+        .value_counts()
+        )
 
-            character_lengths.append(len(content))
+        print(status_report)
 
-            words = len(content.split())
-            word_counts.append(words)
+    # ---------------- SOURCE REPORT ---------------- #
 
-        character_lengths = np.array(character_lengths)
-        word_counts = np.array(word_counts)
+        print("\n----- SOURCE REPORT -----")
 
-        average_characters = np.mean(character_lengths)
-        average_words = np.mean(word_counts)
+        source_report = (
+        df["source"]
+        .value_counts()
+        )
 
-        longest_index = np.argmax(character_lengths)
-        shortest_index = np.argmin(character_lengths)
+        print(source_report)
 
-        longest_note = df.iloc[longest_index]
-        shortest_note = df.iloc[shortest_index]
-
-        print("\n========== CONTENT ANALYSIS ==========")
-
-        print(f"Average Characters   : {average_characters:.2f}")
-        print(f"Average Words        : {average_words:.2f}")
-
-        print("\nLongest Note")
-
-        print(f"ID                   : {longest_note['id']}")
-        print(f"Title                : {longest_note['title']}")
-        print(f"Characters           : {character_lengths[longest_index]}")
-
-        print("\nShortest Note")
-
-        print(f"ID                   : {shortest_note['id']}")
-        print(f"Title                : {shortest_note['title']}")
-        print(f"Characters           : {character_lengths[shortest_index]}")
-
-        print(f"\nTotal Characters     : {np.sum(character_lengths)}")
-
-    # ---------------- EXPORT REPORT ---------------- #
-
-        report = {
-        "Total Notes": [total_notes],
-        "Active Notes": [active],
-        "Completed Notes": [completed],
-        "Completion Rate (%)": [round(completion_rate, 2)],
-        "Manual Notes": [manual],
-        "AI Notes": [ai],
-        "AI Usage Rate (%)": [round(ai_usage_rate, 2)],
-        "High Priority": [high],
-        "Medium Priority": [medium],
-        "Low Priority": [low],
-        "Average Characters": [round(average_characters, 2)],
-        "Average Words": [round(average_words, 2)],
-        "Longest Note Characters": [np.max(character_lengths)],
-        "Shortest Note Characters": [np.min(character_lengths)],
-        "Total Characters": [np.sum(character_lengths)]
-        }
-
-        report_df = pd.DataFrame(report)
-
-        report_df.to_csv("analysis_report.csv", index=False)
-
-        print("\nAnalysis Report Saved Successfully.")
-        
-        
+        print("\n====================================")
+    
     def visualization_report(self):
 
-            try:
-                df = pd.read_csv("notes.csv")
+        """
+        Generate visualization report using MySQL data.
+        """
 
-            except FileNotFoundError:
-                print("notes.csv file not found.")
-                return
+        print("\n========== VISUALIZATION REPORT ==========\n")
 
-            except pd.errors.EmptyDataError:
-                print("notes.csv is empty.")
-                return
+        # Get latest notes from MySQL
+        self.notes = db_get_notes()
 
-            if df.empty:
-                print("No notes available.")
-                return
-            
-            ## MATPLOTLIB 
-            
-            # category pie chart
-            category_counts = df["category"].value_counts()
-
-            plt.figure(figsize=(7, 7))
-            
-            colors = [
-    "#4CAF50",
-    "#2196F3",
-    "#FFC107",
-    "#FF5722",
-    "#9C27B0",
-    "#00BCD4"
-                 ]
-
-            plt.pie(
-                category_counts.values,
-                labels=category_counts.index,
-                autopct="%1.1f%%",
-                startangle=90,
-                colors = colors,
-                shadow=True,
-                wedgeprops={
-                   "edgecolor":"white"
-                   },
-                textprops={
-                  "fontsize":11,
-                  "fontweight":"bold"
-                 }
-               )
-
-            plt.title(
-                  "Category Distribution",
-                   fontsize=15,
-                   fontweight="bold"
-                  )
-
-            plt.axis("equal")
-            
-            plt.tight_layout()
-            plt.savefig(
-                "reports/charts/category_pie.png",
-                 dpi=300,
-                 bbox_inches="tight"
-             )
-
-            plt.close()
-            
-            # Priority bar chart
-            
-            # ---------------- PRIORITY BAR CHART ---------------- #
-
-            priority_counts = df["priority"].value_counts()
-
-            plt.figure(figsize=(8,5))
-
-            bars = plt.bar(
-                      priority_counts.index,
-                      priority_counts.values,
-                      color=["#EF5350", "#FFCA28", "#66BB6A"]
-                       )
-
-            plt.title(
-                   "Priority Distribution",
-                    fontsize=15,
-                    fontweight="bold"
-                   )
-
-            plt.xlabel(
-                "Priority",
-                 fontsize=12
-                   )
-
-            plt.ylabel(
-                  "Number of Notes",
-                   fontsize=12
-                  )
-
-            plt.grid(
-                axis="y",
-                linestyle="--",
-                alpha=0.5
-                )
-
-            for bar in bars:
-
-                height = bar.get_height()
-
-                plt.text(
-               bar.get_x() + bar.get_width()/2,
-               height,
-               int(height),
-               ha="center",
-               va="bottom",
-               fontsize=11,
-               fontweight="bold"
-             )
-
-                plt.tight_layout()
-
-            plt.savefig(
-                       "reports/charts/priority_bar.png",
-                        dpi=300,
-                        bbox_inches="tight"
-                          )
- 
-            plt.close()
-
-            print("Priority Bar Chart Generated Successfully.")
-            
-            
-
-            # ---------------- STATUS PIE CHART ---------------- #
-
-            status_counts = df["status"].value_counts()
-
-            colors = [
-                     "#42A5F5",
-                     "#66BB6A"
-                     ]
-
-            plt.figure(figsize=(7,7))
-
-            plt.pie(
-    status_counts.values,
-    labels=status_counts.index,
-    autopct="%1.1f%%",
-    startangle=90,
-    colors=colors,
-    wedgeprops={"edgecolor":"white"},
-    textprops={
-        "fontsize":11,
-        "fontweight":"bold"
-    }
-)
-
-            plt.title(
-    "Status Distribution",
-    fontsize=15,
-    fontweight="bold"
-)
-
-            plt.axis("equal")
-
-            plt.tight_layout()
-
-            plt.savefig(
-    "reports/charts/status_pie.png",
-    dpi=300,
-    bbox_inches="tight"
-)
-
-            plt.close()
-
-            print("Status Pie Chart Generated Successfully.")
-            
-            # ---------------- AI VS MANUAL BAR CHART ---------------- #
-
-            # ---------------- SOURCE BAR CHART ---------------- #
-
-            source_counts = df["source"].value_counts()
-
-            plt.figure(figsize=(8,5))
-
-            bars = plt.bar(
-                 source_counts.index,
-                 source_counts.values,
-                 color=["#42A5F5", "#AB47BC"]
-                   )
-
-            plt.title(
-                   "Notes Source Distribution",
-                    fontsize=15,
-                    fontweight="bold"
-                     )
-
-            plt.xlabel(
-                   "Source",
-                    fontsize=12
-                )
-
-            plt.ylabel(
-                   "Number of Notes",
-                    fontsize=12
-                 )
-
-            plt.grid(
-                   axis="y",
-                   linestyle="--",
-                   alpha=0.5
-                   )
-
-            for bar in bars:
-
-                height = bar.get_height()
-
-                plt.text(
-                     bar.get_x() + bar.get_width()/2,
-                     height,
-                     f"{int(height)}",
-                     ha="center",
-                     va="bottom",
-                     fontsize=11,
-                     fontweight="bold"
-                      )
-
-            plt.tight_layout()
-
-            plt.savefig(
-                 "reports/charts/source_bar.png",
-                  dpi=300,
-                  bbox_inches="tight"
-               )
-
-            plt.close()
-
-            print("Source Bar Chart Generated Successfully.")            
-
-            ## SEABORN 
-            
-            # ---------------- CATEGORY COUNTPLOT ---------------- #
-
-         
-
-            plt.figure(figsize=(8,5))
-
-            sns.countplot(
-                      data=df,
-                      x="category",
-                      palette="Set2"
-                     )
-
-            plt.title(
-                      "Category Distribution",
-                       fontsize=15,
-                       fontweight="bold"
-                    )
-
-            plt.xlabel(
-                    "Category",
-                     fontsize=12
-                     )
-
-            plt.ylabel(
-                    "Number of Notes",
-                     fontsize=12
-                     )
-
-            plt.grid(
-                  axis="y",
-                  linestyle="--",
-                  alpha=0.5
-                  )
-
-            plt.tight_layout()
-
-            plt.savefig(
-                 "reports/charts/category_countplot.png",
-                  dpi=300,
-                  bbox_inches="tight"
-                 )
-
-            plt.close()
-
-            print("Category Countplot Generated Successfully.")
-            
-            
-            # ---------------- PRIORITY COUNTPLOT ---------------- #
-
-            plt.figure(figsize=(8,5))
-
-            ax = sns.countplot(
-                             data=df,
-                             x="priority",
-                             palette="Set2"
-                            )
-
-            plt.title(
-                       "Priority Distribution",
-                        fontsize=15,
-                        fontweight="bold"
-                  )
-
-            plt.xlabel(
-                    "Priority",
-                     fontsize=12
-                   )
-
-            plt.ylabel(
-                    "Number of Notes",
-                     fontsize=12
-                     )
-
-            plt.grid(
-                   axis="y",
-                   linestyle="--",
-                   alpha=0.5
-                  )
-
-            # Show values on top of bars
-
-            for container in ax.containers:
-                        ax.bar_label(
-                        container,
-                        fontsize=11,
-                        fontweight="bold"
-                        )
-
-            plt.tight_layout()
-
-            plt.savefig(
-                          "reports/charts/priority_countplot.png",
-                           dpi=300,
-                           bbox_inches="tight"
-                           )
-
-            plt.close()
-
-            print("Priority Countplot Generated Successfully.")
-            
-            # ---------------- NOTE LENGTH HISTOGRAM ---------------- #
-
-            df['note-length'] = df['content'].str.len()
-            
-            plt.figure(figsize=(8,5))
-
-            sns.histplot(
-                    data=df,
-                    x="note_length",
-                    bins='auto',
-                    kde=True,
-                    color="#42A5F5"
-                    )
-
-            plt.title(
-                   "Distribution of Note Length",
-                    fontsize=15,
-                    fontweight="bold"
-              )
-
-            plt.xlabel(
-                   "Number of Characters",
-                   fontsize=12
-                   )
-
-            plt.ylabel(
-                  "Frequency",
-                   fontsize=12
-                   )
-
-            plt.grid(
-                axis="y",
-                linestyle="--",
-                alpha=0.5
-                )
-
-            plt.tight_layout()
-
-            plt.savefig(
-                    "reports/charts/note_length_histogram.png",
-                     dpi=300,
-                     bbox_inches="tight"
-               )
-
-            plt.close()
-
-            print("Histogram Generated Successfully.")
-
-            # ---------------- NOTE LENGTH BOXPLOT ---------------- #
-
-
-            plt.figure(figsize=(8,5))
-
-            sns.boxplot(
-                    data=df,
-                    x="note_length",
-                    color="#66BB6A"
-                     )
-
-            plt.title(
-                    "Note Length Analysis",
-                    fontsize=15,
-                    fontweight="bold"
-                     )
-
-            plt.xlabel(
-                 "Number of Characters",
-                  fontsize=12
-                      )
-
-            plt.grid(
-                   axis="x",
-                   linestyle="--",
-                   alpha=0.5
-)
-
-            plt.tight_layout()
-
-            plt.savefig(
-                 "reports/charts/note_length_boxplot.png",
-                  dpi=300,
-                  bbox_inches="tight"
-                  )
-
-            plt.close()
-
-            print("Boxplot Generated Successfully.")
-        
-def ai_generate_note(self):
-    """
-    Generate notes using AI.
-    """
-
-    try:
-        topic = input("Enter Topic: ")
-
-        if not topic.strip():
-            print("Topic cannot be empty.")
+        if not self.notes:
+            print("No notes available for visualization.")
             return
 
-        note_content = generate_note(topic)
+        # Convert MySQL data into DataFrame
+        df = pd.DataFrame(self.notes)
 
-        print("\n========== GENERATED NOTE ==========\n")
-        print(note_content)
+        # Create folders
+        os.makedirs("reports/charts", exist_ok=True)
 
-        choice = input("\nDo you want to save this note? (yes/no): ")
+        # --------------------------------------------------
+        # 1. CATEGORY PIE CHART
+        # --------------------------------------------------
 
-        if choice.lower() == "yes":
+        category_counts = df["category"].value_counts()
 
-            title = input("Enter Title : ")
-            category = input("Enter Category : ")
-            priority = input("Enter Priority (High/Medium/Low): ")
+        plt.figure(figsize=(7, 7))
 
-            if len(self.notes) == 0:
-                new_id = 1
-            else:
-                new_id = max(note["id"] for note in self.notes) + 1
+        plt.pie(
+        category_counts,
+        labels=category_counts.index,
+        autopct="%1.1f%%",
+        startangle=90
+         )
 
-            new_note = {
-                "id": new_id,
+        plt.title("Notes by Category")
+
+        plt.tight_layout()
+
+        plt.savefig(
+        "reports/charts/category_pie.png",
+        dpi=300,
+        bbox_inches="tight"
+        )
+
+        plt.close()
+
+        # --------------------------------------------------
+        # 2. PRIORITY BAR CHART
+        # --------------------------------------------------
+
+        priority_counts = df["priority"].value_counts()
+
+        plt.figure(figsize=(8, 5))
+
+        bars = plt.bar(
+        priority_counts.index,
+        priority_counts.values
+         )
+
+        plt.title("Notes by Priority")
+        plt.xlabel("Priority")
+        plt.ylabel("Number of Notes")
+
+        plt.grid(
+        axis="y",
+        linestyle="--",
+        alpha=0.5
+         )
+
+        for bar in bars:
+
+            plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            int(bar.get_height()),
+            ha="center",
+            va="bottom"
+            )
+
+            plt.tight_layout()
+
+            plt.savefig(
+        "reports/charts/priority_bar.png",
+        dpi=300,
+        bbox_inches="tight"
+        )
+
+        plt.close()
+
+    # --------------------------------------------------
+    # 3. STATUS PIE CHART
+    # --------------------------------------------------
+
+        status_counts = df["status"].value_counts()
+
+        plt.figure(figsize=(7, 7))
+
+        plt.pie(
+        status_counts,
+        labels=status_counts.index,
+        autopct="%1.1f%%",
+        startangle=90
+         )
+
+        plt.title("Notes by Status")
+
+        plt.tight_layout()
+
+        plt.savefig(
+        "reports/charts/status_pie.png",
+        dpi=300,
+        bbox_inches="tight"
+         )
+
+        plt.close()
+
+    # --------------------------------------------------
+    # 4. AI VS MANUAL PIE CHART
+    # --------------------------------------------------
+
+        source_counts = df["source"].value_counts()
+
+        plt.figure(figsize=(7, 7))
+
+        plt.pie(
+        source_counts,
+        labels=source_counts.index,
+        autopct="%1.1f%%",
+        startangle=90
+    )
+
+        plt.title("AI vs Manual Notes")
+
+        plt.tight_layout()
+
+        plt.savefig(
+        "reports/charts/ai_vs_manual_pie.png",
+        dpi=300,
+        bbox_inches="tight"
+        )
+
+        plt.close()
+
+        print("✅ Visualization Report generated successfully!")
+
+        print("\nCharts saved in:")
+        print("reports/charts/")
+    
+    def ai_generate_note(self):
+        """
+         Generate notes using AI.
+        """
+
+        try:
+            topic = input("Enter Topic: ")
+
+            if not topic.strip():
+                print("Topic cannot be empty.")
+                return
+
+            note_content = generate_note(topic)
+
+            print("\n========== GENERATED NOTE ==========\n")
+            print(note_content)
+
+            choice = input("\nDo you want to save this note? (yes/no): ")
+
+            if choice.lower() == "yes":
+
+                title = input("Enter Title : ")
+                category = input("Enter Category : ")
+                priority = input("Enter Priority (High/Medium/Low): ")
+
+                new_note = {
                 "title": title,
                 "category": category,
                 "priority": priority,
                 "status": "Active",
                 "source": "AI",
                 "content": note_content,
-                "date_created": datetime.now().strftime("%d-%m-%Y"),
-                "last_modified": datetime.now().strftime("%d-%m-%Y")
-            }
+                "date_created": datetime.now().strftime("%Y-%m-%d"),
+                "last_modified": datetime.now().strftime("%Y-%m-%d")
+                }
 
-            self.notes.append(new_note)
+                db_add_note(new_note)
 
-            self.save_notes()
+                self.notes = db_get_notes()
 
-            print("\nAI Note Saved Successfully!")
+                print("\nAI Note Saved Successfully!")
 
-        # else:
-        #     print("\nNote Not Saved.")
+            else:
+                print("\nNote Not Saved.")
 
-    except Exception as e:
-        print("Unable to generate note.")
-        print("Error:", e)    
+        except Exception as e:
+            print("Unable to generate note.")
+            print("Error:", e)    
     
 
     def ai_summarize_note(self):
         """
-    Generate AI summary of a note and optionally save it.
+        Generate AI summary of a note and optionally save it.
         """
 
         try:
+            # Get latest notes from MySQL
+            self.notes = db_get_notes()
+
             note_id = int(input("Enter Note ID: "))
 
             found = False
@@ -1045,44 +821,48 @@ def ai_generate_note(self):
                     print("\n========== SUMMARY ==========\n")
                     print(summary)
 
-                    choice = input("\nSave Summary as New Note? (yes/no): ")
+                    choice = input(
+                        "\nSave Summary as New Note? (yes/no): "
+                    )
 
-                if choice.lower() == "yes":
+                    if choice.lower() == "yes":
 
-                    if len(self.notes) == 0:
-                        new_id = 1
-                    else:
-                        new_id = max(note["id"] for note in self.notes) + 1
-
-                    new_note = {
-                        "id": new_id,
+                        # No ID required because MySQL AUTO_INCREMENT
+                        new_note = {
                         "title": note["title"],
                         "category": note["category"],
                         "priority": note["priority"],
                         "status": "Active",
                         "source": "AI",
                         "content": summary,
-                        "date_created": datetime.now().strftime("%d-%m-%Y"),
-                        "last_modified": datetime.now().strftime("%d-%m-%Y")
-                    }
+                        "date_created": datetime.now().strftime("%Y-%m-%d"),
+                        "last_modified": datetime.now().strftime("%Y-%m-%d")
+                        }
 
-                    self.notes.append(new_note)
-                    self.save_notes()
+                        # Save summary directly to MySQL
+                        db_add_note(new_note)
 
-                    print("\nSummary Saved Successfully.")
+                        # Refresh notes from MySQL
+                        self.notes = db_get_notes()
 
-                break
+                        print("\nSummary Saved Successfully.")
+
+                    else:
+
+                         print("\nSummary Not Saved.")
+
+                    break
 
             if not found:
-               print("\nNote ID Not Found.")
+
+                print("\nNote ID Not Found.")
 
         except ValueError:
+
             print("Invalid Note ID. Please enter a number.")
 
-        except PermissionError:
-            print("Please close notes.csv and try again.")
-
         except Exception as e:
+
             print("Unable to generate summary.")
             print("Error:", e)
 
@@ -1092,6 +872,9 @@ def ai_generate_note(self):
         """
 
         try:
+            
+             self.notes = db_get_notes()
+             
              note_id = int(input("Enter Note ID: "))
 
              found = False
@@ -1109,18 +892,18 @@ def ai_generate_note(self):
 
                     choice = input("\nSave Quiz in Text File? (yes/no): ")
 
-                 if choice.lower() == "yes":
+                    if choice.lower() == "yes":
 
-                    file_name = f"Quiz_{note_id}.txt"
+                        file_name = f"Quiz_{note_id}.txt"
 
-                    with open(file_name, "w", encoding="utf-8") as file:
-                        file.write(quiz)
+                        with open(file_name, "w", encoding="utf-8") as file:
+                            file.write(quiz)
 
-                    print("\nQuiz Saved Successfully.")
+                            print("\nQuiz Saved Successfully.")
 
-                    break
+                        break
 
-                 if not found:
+             if not found:
                      print("\nNote ID Not Found.")
 
         except ValueError:

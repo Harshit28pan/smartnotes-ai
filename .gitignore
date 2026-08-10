@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# Local database configuration
+config.py
+
+# Local data / backup
+notes.csv
+
+# Generated charts
+reports/charts/
+
+# OS files
+.DS_Store
+Thumbs.db
