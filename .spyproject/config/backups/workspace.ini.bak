@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = ['notes.csv', 'ai_helper.py', 'main.py', 'notes.py', 'analysis_report.csv']
+recent_files = ['notes.csv', 'ai_helper.py', 'main.py', 'notes.py', 'analysis_report.csv', 'database.py', 'config.py', 'requirements.txt', 'README.md', '.gitignore', 'config.example.py', 'app.py']
 
 [main]
 version = 0.2.0

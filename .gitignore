@@ -3,25 +3,41 @@ __pycache__/
 *.py[cod]
 *.pyo
 
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Streamlit
+.streamlit/secrets.toml
+
 # Spyder
 .spyderproject
 .spyproject
+.ropeproject
 
 # Jupyter
 .ipynb_checkpoints/
 
-# Environment variables
-.env
-
-# Local database configuration
-config.py
-
-# Local data / backup
-notes.csv
-
-# Generated charts
-reports/charts/
-
 # OS files
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Python cache
+.pytest_cache/
+
+# Generated quiz files
+Quiz_*.txt
+
+# Temporary files
+*.tmp
+*.log

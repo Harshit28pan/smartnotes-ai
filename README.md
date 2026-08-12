@@ -1,8 +1,8 @@
 # 📝 Notes Manager
 
-A Python-based Notes Management System that allows users to create, manage, search, analyze, visualize, and generate AI-powered notes.
+A Python-based Notes Management System that allows users to create, manage, search, analyze, visualize, and generate AI-powered study notes.
 
-The project uses **MySQL** as the primary database and integrates **Pandas, NumPy, Matplotlib, Seaborn, Power BI, and Groq AI** for analytics, visualization, dashboarding, and AI features.
+The project uses **MySQL** as the primary database and provides a **Streamlit web interface** for managing notes. It also integrates **Pandas, NumPy, Matplotlib, Seaborn, Power BI, and Groq AI** for analytics, visualization, dashboarding, and AI-powered features.
 
 ---
 
@@ -20,35 +20,45 @@ The project uses **MySQL** as the primary database and integrates **Pandas, NumP
 
 ### 📊 Data Analysis
 
-- Analysis Report
+- Total notes analysis
 - Category-wise analysis
 - Priority-wise analysis
 - Status analysis
 - AI vs Manual note analysis
-- Basic statistical insights using Pandas and NumPy
+- Statistical analysis using Pandas and NumPy
 
 ### 📈 Data Visualization
 
-- Category visualizations
-- Priority visualizations
-- Status visualizations
-- AI vs Manual visualizations
-- Charts generated using Matplotlib and Seaborn
+- Category-wise visualization
+- Priority-wise visualization
+- Status visualization
+- AI vs Manual visualization
+- Interactive charts using Streamlit
 
-### 📊 Power BI Dashboard
 
-- Interactive dashboard
-- Note-related KPIs
-- Category analysis
-- Priority analysis
-- Status analysis
-- Interactive filtering and visualization
+## 📊 Power BI Dashboard
+
+The project also includes an interactive Power BI dashboard
+for analyzing notes data.
+
+The dashboard provides:
+
+- Total Notes KPI
+- Active vs Completed Notes
+- Category-wise analysis
+- Priority-wise analysis
+- AI vs Manual Notes
+- Interactive filtering
+- Data visualization
+
+![Power BI Dashboard](Dashboard.png)
 
 ### 🤖 AI Features
 
 - AI Note Generation
 - AI Note Summarization
 - AI Quiz Generation
+- Quiz export as text file
 - Powered by Groq AI
 
 ---
@@ -65,16 +75,27 @@ The project uses **MySQL** as the primary database and integrates **Pandas, NumP
 | NumPy | Numerical analysis |
 | Matplotlib | Data visualization |
 | Seaborn | Statistical visualization |
-| Power BI | Interactive dashboard |
+| Streamlit | Web application interface |
+| Power BI | Interactive analytics dashboard |
 | Groq AI | AI-powered features |
 
 ---
 
-## 🗄️ Database
-
-The project uses MySQL for persistent data storage.
-
-### Database
+## 🏗️ Project Structure
 
 ```text
-notes_manager_db
+Notes_Manager/
+│
+├── app.py
+├── notes.py
+├── database.py
+├── ai_helper.py
+├── config.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+│
+├── Image/
+│   └── Dashboard.png
+│
+└── Quiz_*.txt
